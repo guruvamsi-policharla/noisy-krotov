@@ -51,7 +51,8 @@ def optimize_pulses(
     skip_initial_forward_propagation=False,
     norm=None,
     overlap=None,
-    limit_thread_pool=None
+    limit_thread_pool=None,
+    e_amp=0
 ):
     r"""Use Krotov's method to optimize towards the given `objectives`.
 
@@ -215,6 +216,8 @@ def optimize_pulses(
             to place no restrictions on multi-threading. The default value
             (None) delegates to
             :obj:`krotov.parallelization.USE_THREADPOOL_LIMITS`.
+        e_amp (double): The standard deviation of the error in updates which
+        	has a normal distribution.
 
     Returns:
         Result: The result of the optimization.
@@ -226,6 +229,7 @@ def optimize_pulses(
             `objectives`; if there are any required keys missing in
             `pulse_options`.
     """
+    print("We are able to modify!")
     logger = logging.getLogger('krotov')
 
     # Initialization
@@ -463,7 +467,7 @@ def optimize_pulses(
                         time_index,
                     )
                     Ψ = fw_states[i_obj]
-                    update = overlap(χ, μ(Ψ))  # ⟨χ|μ|Ψ⟩ ∈ ℂ
+                    update = overlap(χ, μ(Ψ))# ⟨χ|μ|Ψ⟩ ∈ ℂ
                     update *= chi_norms[i_obj]
                     if second_order:
                         update += 0.5 * σ * overlap(delta_phis[i_obj], μ(Ψ))
@@ -472,7 +476,7 @@ def optimize_pulses(
                 S_t = shape_arrays[i_pulse][time_index]
                 Δϵ = (S_t / λₐ) * delta_eps[i_pulse][time_index].imag  # ∈ ℝ
                 g_a_integrals[i_pulse] += abs(Δϵ) ** 2 * dt  # dt may vary!
-                optimized_pulses[i_pulse][time_index] += Δϵ
+                optimized_pulses[i_pulse][time_index] += Δϵ + np.random.normal(0,e_amp)
             # forward propagation
             fw_states = parallel_map[2](
                 _forward_propagation_step,
